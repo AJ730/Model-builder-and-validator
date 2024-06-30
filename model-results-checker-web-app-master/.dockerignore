@@ -1,0 +1,10 @@
+.gitlab
+.gradle
+.idea
+build
+certs
+.gitlab-ci.yml
+gradlew
+gradlew.bat
+README.md
+.gitignore

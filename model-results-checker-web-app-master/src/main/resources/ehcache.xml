@@ -1,0 +1,12 @@
+<ehcache>
+    <cache name="nl.tudelft.sp.modelchecker.entities.Admin" maxElementsInMemory="1000" />
+    <cache name="nl.tudelft.sp.modelchecker.entities.BasicUser" maxElementsInMemory="1000" />
+    <cache name="nl.tudelft.sp.modelchecker.entities.Container" maxElementsInMemory="1000" />
+    <cache name="nl.tudelft.sp.modelchecker.entities.Csv" maxElementsInMemory="1000" />
+    <cache name="nl.tudelft.sp.modelchecker.entities.PersistentCsv" maxElementsInMemory="10000" />
+    <cache name="nl.tudelft.sp.modelchecker.entities.PersistentRecord" maxElementsInMemory="10000" />
+    <cache name="nl.tudelft.sp.modelchecker.entities.Project" maxElementsInMemory="1000" />
+    <cache name="nl.tudelft.sp.modelchecker.entities.ProjectHolder" maxElementsInMemory="1000" />
+    <cache name="nl.tudelft.sp.modelchecker.entities.Record" maxElementsInMemory="1000" />
+    <cache name="nl.tudelft.sp.modelchecker.entities.Submission" maxElementsInMemory="1000" />
+</ehcache>

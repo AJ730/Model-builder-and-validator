@@ -1,0 +1,102 @@
+image: node:16.2.0-alpine3.13
+
+
+stages:
+  - build
+  - staticAnalysis
+  - test
+  - deploy
+  - release
+
+services:
+  - postgres:latest
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - app/node_modules/
+
+before_script:
+  - cd app
+  - npm ci --cache .npm --prefer-offline
+
+client-build:
+  stage: build
+  script:
+    - npm install --cache node_modules
+
+client-test:
+  stage: test
+  script:
+    - npm run test:ci
+  artifacts:
+    when: always
+    paths:
+      - app/junit.xml
+  allow_failure: true
+
+client-coverage:
+  stage: staticAnalysis
+  script:
+    - npm run test:coverage
+  artifacts:
+    when: always
+    paths:
+      - app/coverage/
+  allow_failure: true
+
+server-container:
+  image: docker:19.03.12
+  services:
+    - docker:19.03.12-dind
+
+  variables:
+    # Use TLS https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-enabled
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
+
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  stage: deploy
+  script:
+    - docker build --pull -t $CONTAINER_RELEASE_IMAGE .
+    - docker push $CONTAINER_RELEASE_IMAGE
+    - echo $CONTAINER_RELEASE_IMAGE
+  only:
+    - master
+  allow_failure: false
+
+RecycleEye-Container:
+  image: docker:19.03.12
+  services:
+    - docker:19.03.12-dind
+
+  variables:
+    # Use TLS https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#tls-enabled
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    TUDELFT_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
+    CONTAINER_RELEASE_IMAGE: recycleeyesnapshot/client:latest
+    USERNAME: recycleeyesnapshot
+    PASSWORD: Godisgreat3012%
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker pull $TUDELFT_RELEASE_IMAGE
+    - docker tag $TUDELFT_RELEASE_IMAGE $CONTAINER_RELEASE_IMAGE
+    - docker login -u $USERNAME -p $PASSWORD
+  stage: release
+  script:
+    - echo "Building Image"
+    - docker build --pull -t $CONTAINER_RELEASE_IMAGE .
+    - echo "Pushing Image"
+    - docker push $CONTAINER_RELEASE_IMAGE
+    - echo $CONTAINER_RELEASE_IMAGE
+  only:
+    refs:
+      - schedules
+    variables:
+      - $SCHEDULE_TYPE == "release"
+  allow_failure: false
+

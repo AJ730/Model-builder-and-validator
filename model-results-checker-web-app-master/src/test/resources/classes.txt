@@ -1,0 +1,13 @@
+aluminium
+film
+hdpe_jazz
+hdpe_nat
+paper
+pet_blue
+pet_jazz
+pet_nat
+pet_tray
+pp
+residual
+steel
+wrapped_pet

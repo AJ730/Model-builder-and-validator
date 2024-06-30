@@ -1,0 +1,162 @@
+plugins {
+    id 'java'
+    id 'checkstyle'
+    id 'pmd'
+    id 'jacoco'
+    id 'org.springframework.boot' version '2.4.4'
+    id "io.spring.dependency-management" version "1.0.11.RELEASE"
+    id "io.freefair.lombok" version "6.0.0-m2"
+    id "info.solidsoft.pitest" version "1.6.0"
+}
+
+group 'model-checker'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springCloudVersion', "Hoxton.SR9")
+    set('azureVersion', "3.4.0")
+}
+
+//Only for spring Cloud, DO NOT TOUCH THIS
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        mavenBom "com.azure.spring:azure-spring-boot-bom:${azureVersion}"
+    }
+}
+
+//Add your server dependencies here
+dependencies {
+    implementation 'junit:junit:4.13.1'
+
+
+    //Spring Boot
+    testImplementation group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: '2.4.5'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: '2.4.5'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: '2.4.5'
+    implementation group: 'org.hibernate', name: 'hibernate-ehcache', version: '5.5.0.Final'
+    testImplementation group: 'org.springframework.restdocs', name: 'spring-restdocs-mockmvc', version: '2.0.5.RELEASE'
+
+    //Spring Fox
+    implementation group: 'io.springfox', name: 'springfox-boot-starter', version: '3.0.0'
+
+    //Azure AD
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    implementation 'com.azure.spring:azure-spring-boot-starter-active-directory'
+
+    //Testing Frameworks
+    testImplementation('org.junit.jupiter:junit-jupiter:5.5.2')
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.9.0'
+    testImplementation('org.assertj:assertj-core:3.14.0')
+    testImplementation group: 'org.assertj', name: 'assertj-core', version: '3.15.0'
+    testImplementation 'org.springframework.security:spring-security-test'
+    implementation group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.1'
+
+
+    //Databases
+    implementation group: 'org.postgresql', name: 'postgresql', version: '42.2.18'
+    implementation group: 'com.h2database', name: 'h2', version: '1.4.200'
+    implementation group: 'javax.validation', name: 'validation-api', version: '2.0.1.Final'
+    implementation group: 'com.microsoft.azure', name: 'azure-storage', version: '8.6.6'
+    implementation group: 'com.azure', name: 'azure-storage-blob', version: '12.12.0'
+
+
+    //Utils
+    implementation group: 'com.github.trickl', name: 'jackson.module.httpquery', version: '1.0.0'
+    implementation group: 'org.json', name: 'json', version: '20190722'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.10.2'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.9.3'
+    implementation group: 'org.modelmapper', name: 'modelmapper', version: '2.1.1'
+    implementation group: 'commons-dbcp', name: 'commons-dbcp', version: '1.4'
+    implementation group: 'org.apache.commons', name: 'commons-csv', version: '1.8'
+    implementation group: 'net.bramp.ffmpeg', name: 'ffmpeg', version: '0.6.2'
+    implementation group: 'io.jsonwebtoken', name: 'jjwt', version: '0.2'
+
+
+}
+
+//DO NOT TOUCH ANYTHING BELOW THIS
+test {
+
+    useJUnitPlatform()
+    jacoco {
+        enabled = true
+        includes = ['nl.tudelft.sp.modelchecker.*']
+    }
+    reports.html.enabled = true
+}
+
+jacoco {
+    toolVersion = "0.8.6"
+}
+
+jacocoTestCoverageVerification() {
+    violationRules {
+        rule {
+            enabled = true
+            element = 'CLASS'
+            includes = ['nl.tudelft.sp.modelchecker.*']
+            excludes = [
+                    'nl.tudelft.sp.modelchecker.Application',
+                    'nl.tudelft.sp.modelchecker.services.servicebeans.CrudJpaService',
+                    'nl.tudelft.sp.modelchecker.videoprocessing.*']
+
+
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.9
+            }
+        }
+
+        rule {
+            enabled = true
+            element = 'CLASS'
+            includes = ['nl.tudelft.sp.modelchecker.*']
+            excludes = ['nl.tudelft.sp.modelchecker.Application',
+                        'nl.tudelft.sp.modelchecker.controller.AbstractController',
+                        'nl.tudelft.sp.modelchecker.config.ResourceServerSecurityConfig',
+                        'nl.tudelft.sp.modelchecker.services.servicebeans.CrudJpaService',
+                        'nl.tudelft.sp.modelchecker.videoprocessing.*']
+
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 1
+            }
+        }
+    }
+}
+
+
+checkstyle {
+    toolVersion "8.37"
+    configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
+    ignoreFailures = false
+    maxWarnings = 0
+}
+
+pmd {
+    incrementalAnalysis = true
+    ruleSets = []
+    ruleSetConfig = resources.text.fromFile("${rootDir}/config/spotbugs/excludeFilter.xml")
+    ignoreFailures = false
+}
+
+
+pitest {
+    //adds dependency to org.pitest:pitest-junit5-plugin and sets "testPlugin" to "junit5"
+    junit5PluginVersion = '0.12'
+
+    targetClasses = ['nl.tudelft.sp.modelchecker.*']  //by default "${project.group}.*"
+    pitestVersion = '1.5.1' //not needed when a default PIT version should be used
+    jvmArgs = ['-ea']
+    useClasspathFile = true
+    threads = 4
+    outputFormats = ['XML', 'HTML']
+    timestampedReports = false
+}

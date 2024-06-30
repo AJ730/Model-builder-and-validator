@@ -1,0 +1,52 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost/testdb?reWriteBatchedInserts=true
+    username: postgres
+    password: pw
+    driver-class-name: org.postgresql.Driver
+  servlet:
+    multipart:
+      max-file-size: 1GB
+      max-request-size: 1GB
+  jpa:
+    hibernate:
+      use-new-id-generator-mappings: false
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQL95Dialect
+    show-sql: true
+    properties:
+      javax:
+        #persistence:
+          #schema-generation:
+            #create-source: metadata
+            #scripts:
+              #action: create
+              #create-target: sql/scripts/sfg_prod_create.sql
+      hibernate:
+        cache:
+          use_second_level_cache: true
+          region:
+            factory_class: org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory
+        jdbc:
+          batch_size: 50
+          order_inserts: true
+          order_updates: true
+  h2:
+    console:
+      enabled: true
+azure:
+  storage:
+    ConnectionString: DefaultEndpointsProtocol=https;AccountName=recycleeyemp4store;AccountKey=WXdcLmRU0rUxy0pK4VgWOOWQz+T08BqPab7Xm/8m0XqhZEd2Rw5C8P1jCaHJDXsuvBbRA4W4i9Rs6uBUuqpang==;EndpointSuffix=core.windows.net
+    container:
+      name: videos
+  activedirectory:
+    client-id: 3ba2595f-716d-4520-b153-2e56ccad95bb
+    app-id-uri: api://3ba2595f-716d-4520-b153-2e56ccad95bb
+    tenant-id: 3777bcba-6dfe-4751-8099-e52dd5693600
+server:
+#  ssl:
+#    key-store: localhost.p12
+#    key-store-password: changeit
+#    key-store-type: PKCS12
+#    enabled: true
+  port: 8080

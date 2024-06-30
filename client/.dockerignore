@@ -1,0 +1,11 @@
+../.gitlab
+.idea
+docs
+.gitlab-ci.yml
+app/coverage
+app/build
+app/node_modules
+app/README.md
+app/junit.xml
+app/yarn.lock
+app/.gitignore

@@ -1,0 +1,102 @@
+image: gradle:6.7-jdk15
+
+stages:
+  - build
+  - staticAnalysis
+  - test
+  - deploy
+  - release
+
+variables:
+  # Disable the Gradle daemon to ensure isolated runs of the CI pipeline.
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
+
+before_script:
+  - export GRADLE_USER_HOME=`pwd`/.gradle
+
+cache:
+  key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
+
+server-build:
+  stage: build
+  script:
+    gradle --build-cache assemble
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+    policy: push
+    paths:
+      - build/
+      - .gradle/
+
+server-checkstyle:
+  stage: staticAnalysis
+  script: gradle checkstyleMain checkstyleTest
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+    policy: pull
+    paths:
+      - build/
+      - .gradle/
+
+server-test:
+  # Use the official docker image.
+  image: docker:19.03.12
+  services:
+    - docker:19.03.12-dind
+  stage: test
+
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+  script:
+    - docker build -t $CONTAINER_TEST_IMAGE .
+    - docker run  $CONTAINER_TEST_IMAGE test jacocoTestReport jacocoTestCoverageVerification
+
+server-container:
+  image: docker:19.03.12
+  services:
+    - docker:19.03.12-dind
+
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  stage: deploy
+  script:
+    - docker build --pull -t $CONTAINER_RELEASE_IMAGE .
+    - docker push $CONTAINER_RELEASE_IMAGE
+    - echo $CONTAINER_RELEASE_IMAGE
+  only:
+    - master
+  allow_failure: false
+
+RecycleEye-Container:
+  image: docker:19.03.12
+  services:
+    - docker:19.03.12-dind
+
+  variables:
+    USERNAME: recycleeyesnapshot
+    PASSWORD: Godisgreat3012%
+    TUDELFT_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:latest
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker pull $TUDELFT_RELEASE_IMAGE
+    - docker tag $TUDELFT_RELEASE_IMAGE $CONTAINER_RELEASE_IMAGE
+    - docker login -u $USERNAME -p $PASSWORD
+  stage: release
+  script:
+    - echo "Building Image"
+    - docker build --pull -t $CONTAINER_RELEASE_IMAGE .
+    - echo "Pushing Image"
+    - docker push $CONTAINER_RELEASE_IMAGE
+    - echo $CONTAINER_RELEASE_IMAGE
+  only:
+    refs:
+      - schedules
+    variables:
+      - $SCHEDULE_TYPE == "release"
+  allow_failure: false

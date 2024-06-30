@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <description>
+        Avoid serialization and Data Flow
+    </description>
+    <rule ref="category/java/errorprone.xml">
+        <exclude name="BeanMembersShouldSerialize"/>
+        <exclude name="DataflowAnomalyAnalysis"/>
+        <exclude name="MissingSerialVersionUID"/>
+        <exclude name="CloseResource"/>
+        <exclude name="AvoidDuplicateLiterals"/>
+    </rule>
+</FindBugsFilter>
